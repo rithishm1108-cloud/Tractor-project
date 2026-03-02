@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Customer Work Details</title>
+  <link rel="stylesheet" href="styles.css" />
+  <style>
+    body { padding: 20px; }
+    h1, h2 { color: var(--text-color); }
+    #back-button { margin-bottom: 20px; background: var(--secondary-color); color: white; border: none; padding: 10px 16px; cursor: pointer; border-radius: 6px; font-weight: bold; }
+    #back-button:hover { background: var(--primary-color); }
+    table { width: 100%; border-collapse: collapse; background: var(--card-bg); border-radius: var(--border-radius); overflow: hidden; box-shadow: 0 10px 30px var(--shadow-lg); }
+    th, td { border: 1px solid var(--table-border); padding: 12px; text-align: center; color: var(--text-color); }
+    th { background: var(--table-header-bg); font-weight: bold; }
+    tr:nth-child(even) { background: var(--bg-color); }
+    tr:hover { background: rgba(49, 130, 206, 0.05); }
+  </style>
+</head>
+<body>
+  <button id="back-button" onclick="goBack()">← Back to Customer List</button>
+  <h1>Customer Work Details</h1>
+  <div id="customer-info"></div>
+  <div id="export-buttons" style="margin-bottom: 20px;"></div>
+  <table id="work-table">
+    <thead>
+      <tr>
+        <th>Date</th>
+        <th>Type</th>
+        <th>Total Time</th>
+        <th>Amount</th>
+        <th>Paid</th>
+        <th>Balance</th>
+        <th>Edit</th>
+        <th>Delete</th>
+      </tr>
+    </thead>
+    <tbody id="work-tbody"></tbody>
+    <tfoot>
+      <tr>
+        <td colspan="7" style="text-align:right;"><strong>Total Balance</strong></td>
+        <td id="total-balance">₹0.00</td>
+      </tr>
+    </tfoot>
+  </table>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.25/jspdf.plugin.autotable.min.js"></script>
+  <script>
+    function formatTimeDecimal(float) {
+      float = parseFloat(float);
+      if (isNaN(float)) return "";
+      let h = Math.floor(float);
+      let decimal = float - h;
+      let m = Math.round(decimal * 10);
+      return m === 0 ? `${h}` : `${h}.${m.toString().padStart(2,'0')}`;
+    }
+    function goBack() {
+      window.location.href = 'owner-panel.html';
+    }
+    function getQueryParam(param) {
+      const urlParams = new URLSearchParams(window.location.search);
+      return urlParams.get(param);
+    }
+    function deleteWorkEntry(index) {
+      if (confirm('Are you sure you want to delete this work entry?')) {
+        const username = getQueryParam('username');
+        let workEntries = JSON.parse(localStorage.getItem('work_entries')) || [];
+        const customerWorks = workEntries.filter(e => e.username === username);
+        if (index >= 0 && index < customerWorks.length) {
+          const entryToDelete = customerWorks[index];
+          workEntries = workEntries.filter(e => !(e.username === username && e.date === entryToDelete.date && e.cultivator === entryToDelete.cultivator && e.amount === entryToDelete.amount));
+          localStorage.setItem('work_entries', JSON.stringify(workEntries));
+          loadCustomerDetails(username); // Reload the page data
+        }
+      }
+    }
+    function exportToPDF() {
+      const { jsPDF } = window.jspdf;
+      const doc = new jsPDF();
+      const username = getQueryParam('username');
+      const users = JSON.parse(localStorage.getItem('tractor_users')) || [];
+      const user = users.find(u => u.username === username);
+      const workEntries = JSON.parse(localStorage.getItem('work_entries')) || [];
+      const customerWorks = workEntries.filter(e => e.username === username);
+      let totalBalance = 0;
+
+      doc.setFontSize(18);
+      doc.text('Customer Work Details', 20, 20);
+      doc.setFontSize(12);
+      doc.text(`Customer: ${user.name}`, 20, 30);
+      doc.text(`Total Work Entries: ${customerWorks.length}`, 20, 40);
+
+      // Prepare table data
+      const tableData = customerWorks.map(entry => {
+        const balance = entry.amount - entry.paid;
+        totalBalance += balance;
+        return [
+          entry.date,
+          entry.cultivator,
+          entry.timeStr || formatTimeDecimal(entry.time),
+          entry.amount.toFixed(2),
+          entry.paid.toFixed(2),
+          balance.toFixed(2)
+        ];
+      });
+
+      // Add table using autoTable plugin
+      doc.autoTable({
+        head: [['Date', 'Type', 'Time', 'Amount', 'Paid', 'Balance']],
+        body: tableData,
+        startY: 50,
+        styles: {
+          halign: 'center',
+          valign: 'middle',
+          fontSize: 10
+        },
+        headStyles: {
+          fillColor: [41, 128, 185],
+          textColor: 255,
+          halign: 'center',
+          valign: 'middle'
+        },
+        columnStyles: {
+          0: { cellWidth: 30 }, // Date
+          1: { cellWidth: 40 }, // Type
+          2: { cellWidth: 25 }, // Time
+          3: { cellWidth: 25 }, // Amount
+          4: { cellWidth: 25 }, // Paid
+          5: { cellWidth: 25 }  // Balance
+        }
+      });
+
+      // Add total balance below the table
+      const finalY = doc.lastAutoTable.finalY;
+      doc.setFontSize(12);
+      doc.text(`Total Balance: ${totalBalance.toFixed(2)}`, 20, finalY + 10);
+      doc.save(`${user.name}_work_details.pdf`);
+    }
+
+    function loadCustomerDetails(username) {
+      const users = JSON.parse(localStorage.getItem('tractor_users')) || [];
+      const user = users.find(u => u.username === username);
+      if (!user) {
+        document.getElementById('customer-info').innerText = 'Customer not found.';
+        return;
+      }
+      const workEntries = JSON.parse(localStorage.getItem('work_entries')) || [];
+      const customerWorks = workEntries.filter(e => e.username === username);
+      document.getElementById('customer-info').innerHTML = `
+        <h2>${user.name} (Username: ${user.username})</h2>
+        <p>Total Work Entries: ${customerWorks.length}</p>
+      `;
+      // Add export buttons if owner is logged in
+      if (sessionStorage.getItem('owner_logged_in') === 'true') {
+        document.getElementById('export-buttons').innerHTML = `
+          <button onclick="exportToPDF()">Export to PDF</button>
+        `;
+      }
+      let tbody = document.getElementById('work-tbody');
+      tbody.innerHTML = '';
+      let totalBalance = 0;
+      customerWorks.forEach((entry, index) => {
+        const balance = entry.amount - entry.paid;
+        totalBalance += balance;
+        tbody.innerHTML += `
+          <tr>
+            <td>${entry.date}</td>
+            <td>${entry.cultivator}</td>
+            <td>${entry.timeStr || formatTimeDecimal(entry.time)}</td>
+            <td>₹${entry.amount.toFixed(2)}</td>
+            <td>₹${entry.paid.toFixed(2)}</td>
+            <td>₹${balance.toFixed(2)}</td>
+            <td><button onclick="window.location.href='edit-work.html?username=${encodeURIComponent(username)}&index=${index}'">Edit</button></td>
+            <td><button onclick="deleteWorkEntry(${index})">Delete</button></td>
+          </tr>
+        `;
+      });
+      document.getElementById('total-balance').innerText = `₹${totalBalance.toFixed(2)}`;
+    }
+    const username = getQueryParam('username');
+    if (!username) {
+      document.getElementById('customer-info').innerText = 'No customer specified.';
+    } else {
+      loadCustomerDetails(username);
+    }
+  </script>
+</body>
+</html>

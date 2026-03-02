@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Owner Login - Tractor Rental Service</title>
+  <link rel="stylesheet" href="styles.css" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+  <style>
+    body {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      padding: 20px;
+    }
+    .login-card {
+      max-width: 400px;
+      width: 100%;
+    }
+  </style>
+</head>
+<body>
+  <div class="card login-card">
+    <div class="card-header">
+      <h2><i class="fas fa-key"></i> Owner Login</h2>
+      <p class="subtitle">Enter your credentials to access the owner panel</p>
+    </div>
+    <div class="card-body">
+      <form id="owner-login-form">
+        <div class="input-group">
+          <i class="fas fa-user"></i>
+          <input type="text" id="owner-username" placeholder="Username" required />
+        </div>
+        <div class="input-group">
+          <i class="fas fa-lock"></i>
+          <input type="password" id="owner-password" placeholder="Password" required />
+        </div>
+        <button type="submit" class="login-btn"><i class="fas fa-sign-in-alt"></i> Login</button>
+      </form>
+      <div id="owner-login-error" class="error" style="text-align: center;"></div>
+      <button onclick="window.location.href='index.html'" class="back-btn" style="display: block; margin: 20px auto 0;"><i class="fas fa-arrow-left"></i> Back</button>
+    </div>
+  </div>
+  <script>
+    document.getElementById('owner-login-form').onsubmit = function(e) {
+      e.preventDefault();
+      const username = document.getElementById('owner-username').value.trim();
+      const password = document.getElementById('owner-password').value;
+      if (username === 'spm' && password === 'spm') {
+        sessionStorage.setItem('owner_logged_in', 'true');
+        window.location.href = 'owner-panel.html';
+      } else {
+        document.getElementById('owner-login-error').innerText = 'Invalid owner username or password.';
+      }
+    };
+  </script>
+</body>
+</html>

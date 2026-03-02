@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Update Payment</title>
+  <link rel="stylesheet" href="styles.css" />
+  <style>
+    body { padding: 20px; }
+    h1 { color: #263238; }
+    form {
+      max-width: 400px; background: white; padding: 20px; border-radius: 8px;
+      box-shadow: 0 0 10px rgba(0,0,0,0.1);
+    }
+    label { display: block; margin-top: 12px; font-weight: bold; }
+    input { width: 100%; padding: 8px; margin-top: 4px; box-sizing: border-box; }
+    button {
+      margin-top: 20px; padding: 10px 20px; background: #2e7d32; border: none; color: white; border-radius: 4px; cursor: pointer;
+    }
+    button:hover { background: #388e3c; }
+    #back-button { margin-bottom: 20px; background: #555; color: white; border: none; padding: 8px 12px; cursor: pointer; border-radius: 4px; }
+    .message { margin-top: 16px; font-weight: bold; }
+    .error { color: red; }
+    .success { color: green; }
+  </style>
+</head>
+<body>
+  <button id="back-button" onclick="goBack()">← Back to Customer List</button>
+  <h1>Update Payment</h1>
+
+  <div id="customer-info"></div>
+
+  <form id="payment-form">
+    <label for="payment">Add Payment Amount (₹)</label>
+    <input type="number" step="0.01" min="0" id="payment" name="payment" required />
+    <button type="submit">Update Payment</button>
+  </form>
+  <div id="message" class="message"></div>
+  <script>
+    function goBack() { window.location.href = 'owner-panel.html'; }
+    function getQueryParam(param) {
+      const urlParams = new URLSearchParams(window.location.search);
+      return urlParams.get(param);
+    }
+    function loadCustomer(username) {
+      const users = JSON.parse(localStorage.getItem('tractor_users')) || [];
+      const user = users.find(u => u.username === username);
+      if (!user) {
+        document.getElementById('customer-info').innerText = 'Customer not found.';
+        document.getElementById('payment-form').style.display = 'none';
+        return null;
+      }
+      document.getElementById('customer-info').innerHTML = `
+        <p><strong>Username:</strong> ${user.username}</p>
+        <p><strong>Name:</strong> ${user.name}</p>
+      `;
+      return user;
+    }
+    function showMessage(message, isError) {
+      const msgDiv = document.getElementById('message');
+      msgDiv.innerText = message;
+      msgDiv.classList.toggle('error', isError);
+      msgDiv.classList.toggle('success', !isError);
+    }
+    document.getElementById('payment-form').addEventListener('submit', function(e) {
+      e.preventDefault();
+      const username = getQueryParam('username');
+      if (!username) return;
+      let paymentAmount = parseFloat(document.getElementById('payment').value);
+      if (isNaN(paymentAmount) || paymentAmount <= 0) {
+        showMessage('Please enter a valid payment amount greater than zero.', true);
+        return;
+      }
+      let workEntries = JSON.parse(localStorage.getItem('work_entries')) || [];
+      let userWork = workEntries.filter(e => e.username === username);
+      if (userWork.length === 0) {
+        showMessage('This customer has no work entries.', true);
+        return;
+      }
+      let totalAmount = userWork.reduce((sum, e) => sum + e.amount, 0);
+      let totalPaid = userWork.reduce((sum, e) => sum + e.paid, 0);
+      let totalBalance = totalAmount - totalPaid;
+      if (paymentAmount > totalBalance) {
+        showMessage(`Payment exceeds total balance (₹${totalBalance.toFixed(2)}).`, true);
+        return;
+      }
+      let amountToPay = paymentAmount;
+      for (let i = 0; i < workEntries.length && amountToPay > 0; i++) {
+        let entry = workEntries[i];
+        if (entry.username === username) {
+          let balance = entry.amount - entry.paid;
+          if (balance > 0) {
+            let pay = Math.min(balance, amountToPay);
+            entry.paid += pay;
+            amountToPay -= pay;
+          }
+        }
+      }
+      localStorage.setItem('work_entries', JSON.stringify(workEntries));
+      showMessage('Payment updated successfully.', false);
+      document.getElementById('payment').value = '';
+    });
+    const username = getQueryParam('username');
+    if (!username) {
+      document.getElementById('customer-info').innerText = 'No customer specified.';
+      document.getElementById('payment-form').style.display = 'none';
+    } else {
+      loadCustomer(username);
+    }
+  </script>
+</body>
+</html>

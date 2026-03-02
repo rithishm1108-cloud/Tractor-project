@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Customer Login - Tractor Rental Service</title>
+  <link rel="stylesheet" href="styles.css" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+  <style>
+    body {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      padding: 20px;
+    }
+    .login-card {
+      max-width: 400px;
+      width: 100%;
+    }
+  </style>
+</head>
+<body>
+  <div class="card login-card">
+    <div class="card-header">
+      <h2><i class="fas fa-user-circle"></i> Customer Login</h2>
+      <p class="subtitle">Access your work details and account</p>
+    </div>
+    <div class="card-body">
+      <form id="customer-login-form">
+        <div class="input-group">
+          <i class="fas fa-user"></i>
+          <input type="text" id="customer-username" placeholder="Username" required />
+        </div>
+        <div class="input-group">
+          <i class="fas fa-lock"></i>
+          <input type="password" id="customer-password" placeholder="Password" required />
+        </div>
+        <button type="submit" class="login-btn"><i class="fas fa-sign-in-alt"></i> Login</button>
+      </form>
+      <div id="customer-login-error" class="error" style="text-align: center;"></div>
+      <button onclick="window.location.href='index.html'" class="back-btn" style="display: block; margin: 20px auto 0;"><i class="fas fa-arrow-left"></i> Back</button>
+    </div>
+  </div>
+  <script>
+    document.getElementById('customer-login-form').onsubmit = function(e) {
+      e.preventDefault();
+      const username = document.getElementById('customer-username').value.trim();
+      const password = document.getElementById('customer-password').value;
+      let users = JSON.parse(localStorage.getItem('tractor_users')) || [];
+      const customer = users.find(u => u.username === username && u.password === password);
+      if (!customer) {
+        document.getElementById('customer-login-error').innerText = 'Login failed. Invalid username or password.';
+        return;
+      }
+      sessionStorage.setItem('customer_username', username);
+      sessionStorage.setItem('language', 'en');
+      window.location.href = 'customer-panel.html';
+    };
+  </script>
+</body>
+</html>

@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Edit Work Entry</title>
+  <link rel="stylesheet" href="styles.css" />
+  <style>
+    body { padding: 20px; }
+    h1 { color: var(--text-color); }
+    form {
+      max-width: 400px; background: var(--card-bg); padding: 30px; border-radius: var(--border-radius);
+      box-shadow: 0 10px 30px var(--shadow-lg); border: 1px solid var(--table-border);
+    }
+    label { display: block; margin-top: 15px; font-weight: bold; color: var(--text-color); }
+    input { width: 100%; padding: 12px; margin-top: 6px; box-sizing: border-box; border: 1px solid var(--input-border); border-radius: 6px; background: var(--input-bg); color: var(--text-color); }
+    input:focus { border-color: var(--input-focus); box-shadow: 0 0 5px rgba(49, 130, 206, 0.3); }
+    button {
+      margin-top: 25px; padding: 12px 24px; background: var(--button-bg); border: none; color: white; border-radius: 6px; cursor: pointer; font-weight: bold; transition: all 0.3s ease;
+    }
+    button:hover { background: var(--button-hover); transform: translateY(-2px); box-shadow: 0 4px 12px var(--shadow); }
+    #back-button { margin-bottom: 20px; background: var(--secondary-color); color: white; border: none; padding: 10px 16px; cursor: pointer; border-radius: 6px; font-weight: bold; }
+    #back-button:hover { background: var(--primary-color); }
+    .message { margin-top: 20px; font-weight: bold; padding: 10px; border-radius: 6px; }
+    .error { color: var(--error-color); background: rgba(229, 62, 62, 0.1); border: 1px solid rgba(229, 62, 62, 0.2); }
+    .success { color: var(--success-color); background: rgba(56, 161, 105, 0.1); border: 1px solid rgba(56, 161, 105, 0.2); }
+  </style>
+</head>
+<body>
+  <button id="back-button" onclick="goBack()">← Back to Customer Details</button>
+  <h1>Edit Work Entry</h1>
+  <form id="edit-work-form">
+    <label for="date">Date</label>
+    <input type="date" id="date" name="date" required />
+    <label for="cultivator">Type of Cultivator</label>
+    <input type="text" id="cultivator" name="cultivator" required />
+    <label for="totaltime">Total Time (hours.minutes)</label>
+    <input type="text" id="totaltime" name="totaltime" placeholder="e.g., 1.05 for 1 hour 5 minutes" required />
+    <label for="rate">Amount per Hour (₹)</label>
+    <input type="number" id="rate" name="rate" min="0" step="0.01" required />
+    <button type="submit">Save Changes</button>
+  </form>
+  <div id="message" class="message"></div>
+  <script>
+    function goBack() {
+      const username = getQueryParam('username');
+      window.location.href = `customer-details.html?username=${encodeURIComponent(username)}`;
+    }
+    function getQueryParam(param) {
+      const urlParams = new URLSearchParams(window.location.search);
+      return urlParams.get(param);
+    }
+    function loadWorkEntry(username, index) {
+      const workEntries = JSON.parse(localStorage.getItem('work_entries')) || [];
+      const customerWorks = workEntries.filter(e => e.username === username);
+      if (index < 0 || index >= customerWorks.length) {
+        document.getElementById('message').innerText = 'Work entry not found.';
+        document.getElementById('message').classList.add('error');
+        document.getElementById('edit-work-form').style.display = 'none';
+        return null;
+      }
+      const entry = customerWorks[index];
+      document.getElementById('date').value = entry.date;
+      document.getElementById('cultivator').value = entry.cultivator;
+      document.getElementById('totaltime').value = entry.timeStr || formatTimeDecimal(entry.time);
+      document.getElementById('rate').value = entry.rate;
+      return entry;
+    }
+    function formatTimeDecimal(float) {
+      float = parseFloat(float);
+      if (isNaN(float)) return "";
+      let h = Math.floor(float);
+      let decimal = float - h;
+      let m = Math.round(decimal * 10);
+      return m === 0 ? `${h}` : `${h}.${m.toString().padStart(2,'0')}`;
+    }
+    function showMessage(message, isError) {
+      const msgDiv = document.getElementById('message');
+      msgDiv.innerText = message;
+      msgDiv.classList.toggle('error', isError);
+      msgDiv.classList.toggle('success', !isError);
+    }
+    document.getElementById('edit-work-form').addEventListener('submit', function(e) {
+      e.preventDefault();
+      const username = getQueryParam('username');
+      const index = parseInt(getQueryParam('index'));
+      if (!username || isNaN(index)) return;
+      const date = document.getElementById('date').value;
+      const cultivator = document.getElementById('cultivator').value.trim();
+      const totaltimeStr = document.getElementById('totaltime').value.trim();
+      const rate = parseFloat(document.getElementById('rate').value);
+      if (!date || !cultivator || !totaltimeStr || isNaN(rate) || rate < 0) {
+        showMessage('All fields are required and must be valid.', true);
+        return;
+      }
+      // Parse time
+      let totaltime;
+      if (totaltimeStr.includes('.')) {
+        const parts = totaltimeStr.split('.');
+        if (parts.length === 2 && parts[0] && parts[1]) {
+          const hours = parseInt(parts[0], 10);
+          const minutes = parseInt(parts[1], 10);
+          if (isNaN(hours) || isNaN(minutes) || hours < 0 || minutes < 0 || minutes >= 60) {
+            showMessage('Please enter valid time in hours.minutes format.', true);
+            return;
+          }
+          totaltime = hours + minutes / 60;
+        } else {
+          showMessage('Please enter valid time in hours.minutes format.', true);
+          return;
+        }
+      } else {
+        const hours = parseInt(totaltimeStr, 10);
+        if (isNaN(hours) || hours < 0) {
+          showMessage('Please enter valid time in hours.minutes format.', true);
+          return;
+        }
+        totaltime = hours;
+      }
+      if (totaltime <= 0) {
+        showMessage('Time must be greater than 0.', true);
+        return;
+      }
+      let amount = +(totaltime * rate).toFixed(2);
+      amount = Math.round(amount / 50) * 50; // Round to nearest 50
+      let workEntries = JSON.parse(localStorage.getItem('work_entries')) || [];
+      const customerWorks = workEntries.filter(e => e.username === username);
+      if (index < 0 || index >= customerWorks.length) {
+        showMessage('Work entry not found.', true);
+        return;
+      }
+      const entryToUpdate = customerWorks[index];
+      // Find the exact entry in workEntries
+      const entryIndex = workEntries.findIndex(e => e === entryToUpdate);
+      workEntries[entryIndex].date = date;
+      workEntries[entryIndex].cultivator = cultivator;
+      workEntries[entryIndex].time = totaltime;
+      workEntries[entryIndex].timeStr = totaltimeStr;
+      workEntries[entryIndex].rate = rate;
+      workEntries[entryIndex].amount = amount;
+      // Paid remains unchanged
+      localStorage.setItem('work_entries', JSON.stringify(workEntries));
+      showMessage('Work entry updated successfully.', false);
+      setTimeout(() => goBack(), 2000); // Redirect after 2 seconds
+    });
+    const username = getQueryParam('username');
+    const index = parseInt(getQueryParam('index'));
+    if (!username || isNaN(index)) {
+      document.getElementById('message').innerText = 'Invalid parameters.';
+      document.getElementById('message').classList.add('error');
+      document.getElementById('edit-work-form').style.display = 'none';
+    } else {
+      loadWorkEntry(username, index);
+    }
+  </script>
+</body>
+</html>

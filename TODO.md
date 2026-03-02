@@ -1,0 +1,11 @@
+- [x] Remove dark mode toggle button from index.html
+- [x] Remove toggleDarkMode function and initialization code from app.js
+- [x] Update exportToPDF in customer-details.html to generate a proper table in the PDF
+- [x] Test the PDF export to ensure it displays correctly
+- [x] Update TODO.md to mark completed tasks
+- [ ] Add card wrappers to sections for better visual grouping
+- [ ] Enhance visual hierarchy with improved spacing and typography
+- [ ] Add more icons and improve icon alignment
+- [ ] Add subtle animations for better user experience
+- [ ] Improve button styles and hover effects
+- [ ] Enhance form layouts with better eye-focusing alignment

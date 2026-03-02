@@ -1,0 +1,320 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Owner Panel - Tractor Rental Service</title>
+  <link rel="stylesheet" href="styles.css" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+  <style>
+    body {
+      min-height: 100vh;
+      padding: 20px;
+    }
+    .panel-container {
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+    .panel-header {
+      background: linear-gradient(135deg, var(--secondary-color), var(--primary-color));
+      color: white;
+      padding: 20px 30px;
+      border-radius: var(--border-radius) var(--border-radius) 0 0;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .panel-header h1 {
+      color: white;
+      margin: 0;
+      font-size: 1.8rem;
+    }
+    .panel-content {
+      background: var(--card-bg);
+      padding: 30px;
+      border-radius: 0 0 var(--border-radius) var(--border-radius);
+      box-shadow: 0 10px 30px var(--shadow-lg);
+    }
+    .tab-buttons {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 25px;
+      flex-wrap: wrap;
+    }
+    .tab-btn {
+      padding: 12px 24px;
+      background: #2c3e50;
+      border: 2px solid #1a252f;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 1rem;
+      font-weight: 600;
+      transition: all 0.3s ease;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      color: white;
+    }
+    .tab-btn:hover {
+      border-color: #3498db;
+      background: #34495e;
+    }
+    .tab-btn.active {
+      background: #3498db;
+      color: white;
+      border-color: #2980b9;
+    }
+    .tab-content {
+      display: none;
+      background: var(--card-bg);
+      padding: 25px;
+      border-radius: 8px;
+    }
+    .tab-content.active {
+      display: block;
+    }
+    .form-field {
+      margin-bottom: 20px;
+    }
+    .form-field label {
+      display: block;
+      margin-bottom: 8px;
+      font-weight: bold;
+      font-size: 1.1rem;
+      color: #333;
+    }
+    .form-field input, .form-field select, .form-field textarea {
+      width: 100%;
+      padding: 12px 15px;
+      font-size: 1rem;
+      border: 2px solid #ddd;
+      border-radius: 8px;
+      box-sizing: border-box;
+    }
+    .form-field input:focus, .form-field select:focus, .form-field textarea:focus {
+      border-color: var(--primary-color);
+      outline: none;
+    }
+    .form-btn {
+      padding: 14px 28px;
+      font-size: 1.1rem;
+      font-weight: bold;
+      background: var(--primary-color);
+      color: white;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      margin-top: 10px;
+    }
+    .form-btn:hover {
+      background: var(--secondary-color);
+    }
+    .form-container {
+      background: #2c3e50;
+      padding: 25px;
+      border-radius: 10px;
+      border: 1px solid #1a252f;
+      max-width: 600px;
+      color: white;
+    }
+    .form-container h3 {
+      margin-top: 0;
+      margin-bottom: 20px;
+      font-size: 1.5rem;
+      color: #ffffff;
+    }
+    .form-container .form-field label {
+      color: #ecf0f1;
+    }
+    .form-container .form-btn {
+      background: #3498db;
+      color: white;
+      border: 2px solid #2980b9;
+    }
+    .form-container .form-btn:hover {
+      background: #2980b9;
+    }
+    .form-container input,
+    .form-container select,
+    .form-container textarea {
+      background: #ecf0f1;
+      color: #2c3e50;
+      border: 2px solid #34495e;
+    }
+    .form-container input:focus,
+    .form-container select:focus,
+    .form-container textarea:focus {
+      border-color: #3498db;
+      outline: none;
+    }
+  </style>
+</head>
+<body>
+  <div class="panel-container">
+    <div class="panel-header">
+      <h1><i class="fas fa-cogs"></i> Tractor Owner Panel</h1>
+      <button onclick="logout()" class="logout-btn"><i class="fas fa-sign-out-alt"></i> Logout</button>
+    </div>
+    <div class="panel-content">
+      <div class="tab-buttons">
+        <button class="tab-btn active" onclick="showTab('view-customers')">
+          <i class="fas fa-users"></i> View Customer Details
+        </button>
+        <button class="tab-btn" onclick="showTab('log-work')">
+          <i class="fas fa-plus-circle"></i> Enter Work Details
+        </button>
+        <button class="tab-btn" onclick="showTab('create-account')">
+          <i class="fas fa-user-plus"></i> Create Customer Account
+        </button>
+      </div>
+      
+      <div id="view-customers" class="tab-content active">
+        <div id="customers-panel"></div>
+      </div>
+      
+      <div id="log-work" class="tab-content">
+        <div id="work-entry-panel"></div>
+      </div>
+      
+      <div id="create-account" class="tab-content">
+        <div id="create-account-panel"></div>
+      </div>
+    </div>
+  </div>
+
+  <script src="app.js"></script>
+  <script>
+    // Check if owner is logged in
+    if (sessionStorage.getItem('owner_logged_in') !== 'true') {
+      window.location.href = 'owner-login.html';
+    }
+
+    function showTab(tabName) {
+      // Update tab buttons
+      document.querySelectorAll('.tab-btn').forEach(btn => {
+        btn.classList.remove('active');
+      });
+      event.target.closest('.tab-btn').classList.add('active');
+      
+      // Update tab content
+      document.querySelectorAll('.tab-content').forEach(content => {
+        content.classList.remove('active');
+      });
+      document.getElementById(tabName).classList.add('active');
+      
+      // Load tab content
+      if (tabName === 'view-customers') {
+        renderSortedCustomersTable(document.getElementById('customers-panel'));
+      } else if (tabName === 'log-work') {
+        renderWorkEntryForm();
+      } else if (tabName === 'create-account') {
+        renderCreateAccountForm();
+      }
+    }
+
+    function renderWorkEntryForm() {
+      const panel = document.getElementById('work-entry-panel');
+      panel.innerHTML = `
+        <div class="form-container">
+          <h3><i class="fas fa-plus-circle"></i> Enter Work Details</h3>
+          <form id="work-entry-form">
+            <div class="form-field">
+              <label><i class="fas fa-user"></i> Customer Username</label>
+              <input type="text" id="we-username" placeholder="Customer Username" list="username-list" required />
+              <datalist id="username-list"></datalist>
+            </div>
+            <div class="form-field">
+              <label><i class="fas fa-calendar"></i> Date</label>
+              <input type="date" id="we-date" required />
+            </div>
+            <div class="form-field">
+              <label><i class="fas fa-tractor"></i> Type of Cultivator</label>
+              <input type="text" id="we-cultivator" list="cultivator-list" placeholder="Enter cultivator type" required />
+              <datalist id="cultivator-list"></datalist>
+            </div>
+            <div class="form-field">
+              <label><i class="fas fa-clock"></i> Total Time (hours.minutes)</label>
+              <input type="text" id="we-totaltime" placeholder="e.g., 1.05 for 1 hour 5 minutes" required />
+            </div>
+            <div class="form-field">
+              <label><i class="fas fa-rupee-sign"></i> Amount per Hour (₹)</label>
+              <input type="number" id="we-rate" min="0" step="0.01" placeholder="Enter rate per hour" required />
+            </div>
+            <button type="submit" class="form-btn"><i class="fas fa-save"></i> Log Work</button>
+          </form>
+          <div id="we-error" class="error"></div>
+        </div>
+      `;
+      
+      // Add autocomplete for username
+      const usernameInput = document.getElementById('we-username');
+      const usernameDatalist = document.getElementById('username-list');
+      usernameInput.addEventListener('input', function() {
+        const query = this.value.toLowerCase();
+        const users = JSON.parse(localStorage.getItem('tractor_users')) || [];
+        const filteredUsers = users.filter(user =>
+          user.username.toLowerCase().startsWith(query) ||
+          user.name.toLowerCase().startsWith(query) ||
+          (user.nickname && user.nickname.toLowerCase().startsWith(query))
+        );
+        usernameDatalist.innerHTML = filteredUsers.map(user => `<option value="${user.username}">`).join('');
+      });
+      
+      // Populate cultivator datalist
+      const workEntries = JSON.parse(localStorage.getItem('work_entries')) || [];
+      const uniqueCultivators = [...new Set(workEntries.map(entry => entry.cultivator))];
+      const cultivatorDatalist = document.getElementById('cultivator-list');
+      cultivatorDatalist.innerHTML = uniqueCultivators.map(type => `<option value="${type}">`).join('');
+      
+      document.getElementById('work-entry-form').onsubmit = function(e) {
+        e.preventDefault();
+        logWorkEntry();
+      };
+    }
+
+    function renderCreateAccountForm() {
+      const panel = document.getElementById('create-account-panel');
+      panel.innerHTML = `
+        <div class="form-container">
+          <h3>Create Customer Account</h3>
+          <form id="create-customer-form">
+            <div class="form-field">
+              <label>Customer Username</label>
+              <input type="text" id="ca-username" placeholder="Customer Username" required />
+            </div>
+            <div class="form-field">
+              <label>Customer Password</label>
+              <input type="password" id="ca-password" placeholder="Customer Password" required />
+            </div>
+            <div class="form-field">
+              <label>Customer Name</label>
+              <input type="text" id="ca-name" placeholder="Customer Name" required />
+            </div>
+            <div class="form-field">
+              <label>Customer Nickname (optional)</label>
+              <input type="text" id="ca-nickname" placeholder="Customer Nickname" />
+            </div>
+            <button type="submit" class="form-btn">Create Account</button>
+          </form>
+          <div id="ca-error" class="error"></div>
+        </div>
+      `;
+      
+      document.getElementById('create-customer-form').onsubmit = function(e) {
+        e.preventDefault();
+        createCustomerAccount();
+      };
+    }
+
+    function logout() {
+      sessionStorage.removeItem('owner_logged_in');
+      window.location.href = 'index.html';
+    }
+
+    // Load customers table on page load
+    window.addEventListener('DOMContentLoaded', () => {
+      renderSortedCustomersTable(document.getElementById('customers-panel'));
+    });
+  </script>
+</body>
+</html>

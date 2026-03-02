@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Tractor Rental Service</title>
+  <link rel="stylesheet" href="styles.css" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+</head>
+<body>
+  <div class="hero-section">
+    <div class="hero-overlay">
+      <h1>Tractor Rental Service</h1>
+      <div id="role-selection">
+        <h2>Choose Your Role</h2>
+        <button onclick="window.location.href='owner-login.html'">Tractor Owner</button>
+        <button onclick="window.location.href='customer-login.html'">Customer</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Owner Login Section -->
+  <div id="owner-login-section" class="hidden card">
+    <div class="card-header">
+      <h2><i class="fas fa-key"></i> Owner Login</h2>
+      <p class="subtitle">Enter your credentials to access the owner panel</p>
+    </div>
+    <div class="card-body">
+      <form id="owner-login-form">
+        <div class="input-group">
+          <i class="fas fa-user"></i>
+          <input type="text" id="owner-username" placeholder="Username" required />
+        </div>
+        <div class="input-group">
+          <i class="fas fa-lock"></i>
+          <input type="password" id="owner-password" placeholder="Password" required />
+        </div>
+        <button type="submit" class="login-btn"><i class="fas fa-sign-in-alt"></i> Login</button>
+      </form>
+      <div id="owner-login-error" class="error"></div>
+      <button onclick="goBackToRoleSelection()" class="back-btn"><i class="fas fa-arrow-left"></i> Back</button>
+    </div>
+  </div>
+
+  <!-- Owner Section -->
+  <div id="owner-section" class="hidden card">
+    <div class="card-header">
+      <h2><i class="fas fa-cogs"></i> Tractor Owner Panel</h2>
+      <p class="subtitle">Manage customers and work entries</p>
+    </div>
+    <div class="card-body">
+      <div class="action-buttons">
+        <button onclick="showOwnerTab('view-customers')" class="action-btn">
+          <i class="fas fa-users"></i>
+          <span>View Customer Details</span>
+        </button>
+        <button onclick="showOwnerTab('log-work')" class="action-btn">
+          <i class="fas fa-plus-circle"></i>
+          <span>Enter Work Details</span>
+        </button>
+        <button onclick="showOwnerTab('create-account')" class="action-btn">
+          <i class="fas fa-user-plus"></i>
+          <span>Create Customer Account</span>
+        </button>
+      </div>
+      <div id="owner-panel-content"></div>
+      <button onclick="logout()" class="logout-btn"><i class="fas fa-sign-out-alt"></i> Logout</button>
+    </div>
+  </div>
+
+  <!-- Customer Section -->
+  <div id="customer-section" class="hidden">
+    <div id="customer-login-form" class="card">
+      <div class="card-header">
+        <h2><i class="fas fa-user-circle"></i> Customer Login</h2>
+        <p class="subtitle">Access your work details and account</p>
+      </div>
+      <div class="card-body">
+        <form>
+          <div class="input-group">
+            <i class="fas fa-user"></i>
+            <input type="text" id="customer-username" placeholder="Username" required />
+          </div>
+          <div class="input-group">
+            <i class="fas fa-lock"></i>
+            <input type="password" id="customer-password" placeholder="Password" required />
+          </div>
+          <button type="submit" class="login-btn"><i class="fas fa-sign-in-alt"></i> Login</button>
+        </form>
+        <div id="customer-login-error" class="error"></div>
+      </div>
+    </div>
+    <div id="customer-dashboard" class="hidden card">
+      <div class="card-header">
+        <h2><i class="fas fa-tachometer-alt"></i> Customer Dashboard</h2>
+        <p class="subtitle">View your work history and account details</p>
+      </div>
+      <div class="card-body">
+        <div id="customer-about" class="info-card">
+          <h3><i class="fas fa-info-circle"></i> <span data-i18n="about">About Owner</span></h3>
+          <div class="info-content">
+            <p><i class="fas fa-map-marker-alt"></i> <strong data-i18n="district">District:</strong> Namakkal</p>
+            <p><i class="fas fa-map-pin"></i> <strong data-i18n="place">Place:</strong> Maanikkavellur</p>
+            <p><i class="fas fa-user-tie"></i> <strong data-i18n="ownerName">Owner Name:</strong> Srithar. K</p>
+            <p><i class="fas fa-phone"></i> <strong data-i18n="contactNumbers">Contact Numbers:</strong></p>
+            <ul>
+              <li>9786252908 (Srithar)</li>
+              <li>8489337908 (Manoj Kumar)</li>
+              <li>6374960431 (Rithish Kumar)</li>
+            </ul>
+          </div>
+        </div>
+        <div class="language-selector">
+          <label for="language-select"><i class="fas fa-globe"></i> <span data-i18n="selectLanguage">Select Language:</span></label>
+          <select id="language-select">
+            <option value="en">English</option>
+            <option value="ta">தமிழ்</option>
+          </select>
+        </div>
+        <h3 id="work-details-title" class="section-title"><i class="fas fa-list"></i> <span data-i18n="yourWorkDetails">Your Work Details</span></h3>
+        <div class="table-container">
+          <table id="work-table" class="modern-table">
+            <thead>
+              <tr>
+                <th data-i18n="date">Date</th>
+                <th data-i18n="type">Type</th>
+                <th data-i18n="time">Total Time</th>
+                <th data-i18n="amount">Amount</th>
+                <th data-i18n="paid">Paid</th>
+                <th data-i18n="balance">Balance</th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+            <tfoot>
+              <tr class="total-row">
+                <td colspan="5" style="text-align:right;"><strong data-i18n="total">Total</strong></td>
+                <td id="total-balance">₹0.00</td>
+              </tr>
+            </tfoot>
+          </table>
+        </div>
+        <button onclick="logout()" id="logout-btn" class="logout-btn"><i class="fas fa-sign-out-alt"></i> <span data-i18n="logout">Logout</span></button>
+      </div>
+    </div>
+  </div>
+  <!-- Loading Spinner -->
+  <div id="loading-spinner" class="hidden" style="position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); z-index: 1000;">
+    <div style="border: 4px solid #f3f3f3; border-top: 4px solid #3498db; border-radius: 50%; width: 40px; height: 40px; animation: spin 1s linear infinite;"></div>
+  </div>
+  <script src="app.js"></script>
+</body>
+</html>

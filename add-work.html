@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Add Work Details</title>
+  <link rel="stylesheet" href="styles.css" />
+  <style>
+    body { padding: 20px; }
+    h1 { color: #263238; }
+    form {
+      max-width: 500px; background: white; padding: 20px; border-radius: 8px;
+      box-shadow: 0 0 10px rgba(0,0,0,0.1);
+    }
+    label { display: block; margin-top: 12px; font-weight: bold; }
+    input { width: 100%; padding: 8px; margin-top: 4px; box-sizing: border-box; }
+    button {
+      margin-top: 20px; padding: 10px 20px; background: #2e7d32; border: none; color: white; border-radius: 4px; cursor: pointer;
+    }
+    button:hover { background: #388e3c; }
+    #back-button { margin-bottom: 20px; background: #555; color: white; border: none; padding: 8px 12px; cursor: pointer; border-radius: 4px; }
+    .message { margin-top: 16px; font-weight: bold; }
+    .error { color: red; }
+    .success { color: green; }
+  </style>
+</head>
+<body>
+  <button id="back-button" onclick="goBack()">← Back to Customer List</button>
+  <h1>Add Work Details</h1>
+
+  <div id="customer-info"></div>
+
+  <form id="work-form">
+    <label for="date">Date</label>
+    <input type="date" id="date" required /><br />
+    
+    <label for="cultivator">Type of Cultivator</label>
+    <input type="text" id="cultivator" list="cultivator-list" placeholder="Enter cultivator type" required />
+    <datalist id="cultivator-list"></datalist><br />
+    
+    <label for="totaltime">Total Time (hours.minutes)</label>
+    <input type="text" id="totaltime" placeholder="e.g., 1.05 for 1 hour 5 minutes" required /><br />
+    
+    <label for="rate">Amount per Hour (₹)</label>
+    <input type="number" id="rate" min="0" step="0.01" required /><br />
+    
+    <button type="submit">Add Work</button>
+  </form>
+  <div id="message" class="message"></div>
+  <script>
+    function goBack() {
+      window.location.href = 'owner-panel.html';
+    }
+    
+    function getQueryParam(param) {
+      const urlParams = new URLSearchParams(window.location.search);
+      return urlParams.get(param);
+    }
+    
+    function loadCustomer(username) {
+      const users = JSON.parse(localStorage.getItem('tractor_users')) || [];
+      const user = users.find(u => u.username === username);
+      if (!user) {
+        document.getElementById('customer-info').innerText = 'Customer not found.';
+        document.getElementById('work-form').style.display = 'none';
+        return null;
+      }
+      document.getElementById('customer-info').innerHTML = `
+        <p><strong>Customer:</strong> ${user.name} (${user.username})</p>
+      `;
+      return user;
+    }
+    
+    function showMessage(message, isError) {
+      const msgDiv = document.getElementById('message');
+      msgDiv.innerText = message;
+      msgDiv.classList.toggle('error', isError);
+      msgDiv.classList.toggle('success', !isError);
+    }
+    
+    // Populate cultivator datalist with history
+    const workEntries = JSON.parse(localStorage.getItem('work_entries')) || [];
+    const uniqueCultivators = [...new Set(workEntries.map(entry => entry.cultivator))];
+    const cultivatorDatalist = document.getElementById('cultivator-list');
+    cultivatorDatalist.innerHTML = uniqueCultivators.map(type => `<option value="${type}">`).join('');
+    
+    document.getElementById('work-form').addEventListener('submit', function(e) {
+      e.preventDefault();
+      const username = getQueryParam('username');
+      if (!username) return;
+      
+      const date = document.getElementById('date').value;
+      const cultivator = document.getElementById('cultivator').value.trim();
+      const totaltimeStr = document.getElementById('totaltime').value.trim();
+      const rate = parseFloat(document.getElementById('rate').value);
+      
+      if (!date || !cultivator || !totaltimeStr || isNaN(rate) || rate < 0) {
+        showMessage('Please fill in all fields correctly.', true);
+        return;
+      }
+      
+      // Parse time as hours.minutes format
+      let totaltime;
+      if (totaltimeStr.includes('.')) {
+        const parts = totaltimeStr.split('.');
+        if (parts.length === 2 && parts[0] && parts[1]) {
+          const hours = parseInt(parts[0], 10);
+          const minutes = parseInt(parts[1], 10);
+          if (isNaN(hours) || isNaN(minutes) || hours < 0 || minutes < 0 || minutes >= 60) {
+            showMessage('Please enter valid time in hours.minutes format (e.g., 1.05 for 1 hour 5 minutes).', true);
+            return;
+          }
+          totaltime = hours + minutes / 60;
+        } else {
+          showMessage('Please enter valid time in hours.minutes format (e.g., 1.05 for 1 hour 5 minutes).', true);
+          return;
+        }
+      } else {
+        const hours = parseInt(totaltimeStr, 10);
+        if (isNaN(hours) || hours < 0) {
+          showMessage('Please enter valid time in hours.minutes format (e.g., 1.05 for 1 hour 5 minutes).', true);
+          return;
+        }
+        totaltime = hours;
+      }
+      
+      if (totaltime <= 0) {
+        showMessage('Please enter valid time greater than 0.', true);
+        return;
+      }
+      
+      let amount = +(totaltime * rate).toFixed(2);
+      // Round to nearest 50 rupees
+      amount = Math.round(amount / 50) * 50;
+      
+      let workEntries = JSON.parse(localStorage.getItem('work_entries')) || [];
+      workEntries.push({
+        username,
+        date,
+        cultivator,
+        time: totaltime,
+        timeStr: totaltimeStr,
+        rate: rate,
+        amount,
+        paid: 0
+      });
+      
+      localStorage.setItem('work_entries', JSON.stringify(workEntries));
+      showMessage('Work entry added successfully.', false);
+      document.getElementById('work-form').reset();
+    });
+    
+    const username = getQueryParam('username');
+    if (!username) {
+      document.getElementById('customer-info').innerText = 'No customer specified.';
+      document.getElementById('work-form').style.display = 'none';
+    } else {
+      loadCustomer(username);
+    }
+  </script>
+</body>
+</html>
